@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# Local environment settings
+*.env
+.env
+
+
+# VSCode config files
+.vscode/
+
+# Mac system files
+.DS_Store
+
+# PyCharm project settings
+.idea/
+
+# SQLite / DB files (if used)
+*.sqlite3
+*.db
+
+# Logs and runtime files
+*.log
+
+# Token/cache
+*.pem
+__tokens__/
+
+# Python egg metadata
+*.egg-info/
+
+# Backup / temp files
+*.bak
+*.swp
