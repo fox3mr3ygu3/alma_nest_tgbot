@@ -210,3 +210,18 @@ def clear_session_keys(telegram_id, keys):
         """, (key, telegram_id))
     conn.commit()
     cur.close()
+
+
+def clear_session_keys(telegram_id: int, keys: list):
+    if not keys:
+        return
+
+    cur = conn.cursor()
+    query = f"""
+        UPDATE sessions
+        SET data = data #- ARRAY[{', '.join(f"'{key}'" for key in keys)}]
+        WHERE telegram_id = %s
+    """
+    cur.execute(query, (telegram_id,))
+    conn.commit()
+    cur.close()

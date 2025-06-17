@@ -34,12 +34,12 @@ async def client_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 set_session_value(user_id, "id", client_id)
                 return await return_visit_buttons(update, context, user_id)
         else:
-            await update.message.reply_text("Please enter your 6-digit password:")
+            await update.message.reply_text("Введите ваш 6-значный пароль:")
             set_session_value(user_id, "id", client_id)
             return LOGIN_PASSWORD
 
     # New user → start login flow
-    await update.message.reply_text("Welcome! Please enter your 4-digit ID:")
+    await update.message.reply_text("Добро пожаловать! Введите свой 4-значный ID:")
     return LOGIN_ID
 
 
@@ -49,11 +49,11 @@ async def get_client_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     client_id = update.message.text.strip()
 
     if not client_id.isdigit() or len(client_id) != 4:
-        await update.message.reply_text("❌ Invalid ID format. Please enter a 4-digit ID.")
+        await update.message.reply_text("❌ Неверный формат ID. Введите 4-значный ID:")
         return LOGIN_ID
 
     set_session_value(user_id, "id", client_id)
-    await update.message.reply_text("Now enter your 6-digit password:")
+    await update.message.reply_text("Теперь введите свой 6-значный пароль:")
     return LOGIN_PASSWORD
 
 
@@ -63,16 +63,16 @@ async def get_client_password(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     client_id = get_session_value(user_id, "id")
     if not client_id:
-        await update.message.reply_text("⚠️ Session expired. Please /start again.")
+        await update.message.reply_text("⚠️ Сессия истекла. Пожалуйста, начните снова. /start")
         return ConversationHandler.END
 
     if not password.isdigit() or len(password) != 6:
-        await update.message.reply_text("❌ Invalid password format. Please enter a 6-digit password.")
+        await update.message.reply_text("❌ Неверный формат пароля. Введите пароль из 6 цифр:")
         return LOGIN_PASSWORD
 
     result = validate_password(client_id, password)
     if not result:
-        await update.message.reply_text("❌ Invalid ID or password. Please try again with /start.")
+        await update.message.reply_text("❌ Неверный ID или пароль. Попробуйте еще раз с помощью /start.")
         return ConversationHandler.END
 
     client_info = get_client(client_id)
@@ -94,19 +94,19 @@ async def get_client_password(update: Update, context: ContextTypes.DEFAULT_TYPE
     conn.commit()
     cur.close()
 
-    buttons = [[InlineKeyboardButton(f"Visit {i}", callback_data=f"visit_{i}")] 
+    buttons = [[InlineKeyboardButton(f"Посещение {i}", callback_data=f"visit_{i}")] 
                for i in range(used_visits + 1, package_type + 1)]
-    buttons.append([InlineKeyboardButton("🔒 Logout", callback_data="logout")])
+    buttons.append([InlineKeyboardButton("🔒 Выйти", callback_data="logout")])
     reply_markup = append_back_button(buttons)
 
     await update.message.reply_text(
-        f"✅ Logged in!\n"
-        f"Name: {full_name}\n"
-        f"Package: {package_type} visits\n"
-        f"Remaining: {visits_remaining}\n"
-        f"Expires: {expire_date}\n\n"
-        f"Click a button for your next visit:",
-        reply_markup=reply_markup
+    f"✅ Вы успешно вошли!\n"
+    f"Имя: {full_name}\n"
+    f"Пакет: {package_type} посещений\n"
+    f"Осталось: {visits_remaining}\n"
+    f"Действует до: {expire_date}\n\n"
+    f"Пожалуйста, выберите дату следующего посещения:",
+    reply_markup=reply_markup
     )
     return ConversationHandler.END
 
@@ -120,14 +120,14 @@ async def return_visit_buttons(update, context, user_id):
         row = cur.fetchone()
         cur.close()
         if not row:
-            await update.message.reply_text("❌ Session not found. Please /start again.")
+            await update.message.reply_text("Сеанс не найден. Пожалуйста, начните заново командой /start.")
             return ConversationHandler.END
         client_id = row[0]
         set_session_value(user_id, "id", client_id)
 
     client_info = get_client(client_id)
     if not client_info:
-        await update.message.reply_text("❌ Client not found. Please contact admin.")
+        await update.message.reply_text("❌ Клиент не найден. Пожалуйста, свяжитесь с администратором - @almanest_contact.")
         return ConversationHandler.END
 
     package_type = int(client_info[5])
@@ -143,32 +143,32 @@ async def return_visit_buttons(update, context, user_id):
         cur.execute("DELETE FROM sessions WHERE telegram_id = %s", (user_id,))
         conn.commit()
         cur.close()
-        await update.message.reply_text("❌ Your package is finished or expired. Please contact admin.")
+        await update.message.reply_text("❌ Ваш пакет закончился или срок его действия истёк. Пожалуйста, свяжитесь с администратором - @almanest_contact.")
         return ConversationHandler.END
 
     set_session_value(user_id, "package", package_type)
 
-    buttons = [[InlineKeyboardButton(f"Visit {i}", callback_data=f"visit_{i}")]
+    buttons = [[InlineKeyboardButton(f"Посещение {i}", callback_data=f"visit_{i}")]
                for i in range(used_visits + 1, package_type + 1)]
-    buttons.append([InlineKeyboardButton("🔒 Logout", callback_data="logout")])
+    buttons.append([InlineKeyboardButton("🔒 Выйти", callback_data="logout")])
     reply_markup = append_back_button(buttons, include_back=False)
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"✅ Welcome back!\n"
-             f"Name: {full_name}\n"
-             f"Package: {package_type} visits\n"
-             f"Remaining: {visits_remaining}\n"
-             f"Expires: {expire_date}\n\n"
-             f"Click a button for your next visit:",
+        text = (
+            f"✅ С возвращением!\n"
+            f"Имя: {full_name}\n"
+            f"Пакет: {package_type} посещений\n"
+            f"Осталось: {visits_remaining}\n"
+            f"Действует до: {expire_date}\n\n"
+            f"Выберите дату следующего посещения:"
+        ),
         reply_markup=reply_markup
     )
 
-
 async def visit_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
-    await query.message.delete()
+
 
     user_id = update.effective_user.id
     client_id = get_session_value(user_id, "id")
@@ -189,12 +189,17 @@ async def visit_button_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
     clicked_visit = int(data.split("_")[1])
     expected_visit = used_visits + 1
+
+    # ❌ If wrong visit clicked → show popup alert, but don't delete buttons
     if clicked_visit != expected_visit:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f"⚠️ You must use Visit {expected_visit} first before Visit {clicked_visit}."
+        await query.answer(
+            text=f"⚠️ Сначала необходимо выбрать Посещение {expected_visit}.",
+            show_alert=True
         )
         return
+
+    # ✅ Correct visit → delete old message
+    await query.message.delete()
 
     set_session_value(user_id, "last_visit", clicked_visit)
 
@@ -210,12 +215,12 @@ async def visit_button_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     if row:
         buttons.append(row)
 
-    buttons.append([InlineKeyboardButton("🔒 Logout", callback_data="logout")])
+    buttons.append([InlineKeyboardButton("🔒 Выйти", callback_data="logout")])
     reply_markup = append_back_button(buttons)
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"📅 Select the day for Visit {clicked_visit}:",
+        text = f"📅 Выберите день для Посещения {clicked_visit}:",
         reply_markup=reply_markup
     )
 
@@ -276,8 +281,7 @@ async def select_day_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"⏰ Choose time for Visit {last_visit} on {formatted_date}:",
-        reply_markup=reply_markup
+        text = f"⏰ Выберите время для Посещения {last_visit} на дату {formatted_date}:",        reply_markup=reply_markup
     )
 
 
@@ -306,10 +310,11 @@ async def select_time_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"📌 Visit {visit} scheduled for {selected_day} at {selected_time}.\n"
-             f"👶 Please enter the number of children attending:"
+        text = (
+            f"📌 Посещение {visit} запланировано на {selected_day} в {selected_time}.\n"
+            f"👶 Пожалуйста, укажите количество детей, которые будут присутствовать:"
+        )
     )
-
 
 async def children_input_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -325,7 +330,7 @@ async def children_input_handler(update: Update, context: ContextTypes.DEFAULT_T
 
     text = update.message.text.strip()
     if not text.isdigit() or not (1 <= int(text) <= 20):
-        await update.message.reply_text("❌ Please enter a valid number of children (1-20).")
+        await update.message.reply_text("❌ Пожалуйста, введите корректное количество детей (от 1 до 20).")
         return
 
     visit = get_session_value(user_id, "last_visit")
@@ -334,12 +339,12 @@ async def children_input_handler(update: Update, context: ContextTypes.DEFAULT_T
     client_id = get_session_value(user_id, "id")
 
     if not all([visit, selected_day, selected_time, client_id]):
-        await update.message.reply_text("⚠️ Session is broken. Please /start again.")
+        await update.message.reply_text("⚠️ Сессия нарушена. Пожалуйста, начните сначала командой /start.")
         return ConversationHandler.END
 
     # ✅ 1. Send confirmation before deletion
     await update.message.reply_text(
-        f"✅ Visit {visit} booked for {selected_day} at {selected_time} with {text} children.\nSee you then!"
+        f"✅ Посещение {visit} забронировано на {selected_day} в {selected_time} для {text} детей.\nДо встречи!"
     )
 
     client_data = get_client(client_id)
@@ -360,15 +365,19 @@ async def children_input_handler(update: Update, context: ContextTypes.DEFAULT_T
         }
     )
 
-    # ✅ 3. Only now — decrement and possibly delete
+    # 3. Only now — decrement and possibly delete
     date_obj = datetime.strptime(selected_day, "%d/%m/%Y").date()
     decrement_visit(client_id, int(visit), date_obj, selected_time)
-
-    # ✅ 4. Try to return visit buttons — if client still exists
+    clear_session_keys(user_id, ["last_visit", "visit_day", "visit_time"])
+    # 4. Try to return visit buttons — if client still exists
     if get_client(client_id):
-        return await return_visit_buttons(update, context, user_id)
+        await return_visit_buttons(update, context, user_id)
+        return ConversationHandler.END
     else:
-        await update.message.reply_text("✅ Your final visit was recorded and your profile is now inactive.")
+        await update.message.reply_text(
+            "✅ Ваше последнее посещение учтено, и ваш профиль теперь неактивен.\n"
+            "Пожалуйста, свяжитесь с администратором, чтобы получить новый пакет - @almanest_contact."
+        )
         cur = conn.cursor()
         cur.execute("DELETE FROM sessions WHERE telegram_id = %s", (user_id,))
         conn.commit()
@@ -377,11 +386,11 @@ async def children_input_handler(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def ignore_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer("⚠️ This session has already started.", show_alert=True)
+    await update.callback_query.answer("⚠️ Этот сеанс уже начался.", show_alert=True)
 
 
 async def full_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer("❌ This time slot is full. Please choose another.", show_alert=True)
+    await update.callback_query.answer("❌ Это временное окно уже заполнено. Пожалуйста, выберите другое.", show_alert=True)
 
 
 
@@ -399,11 +408,11 @@ async def logout_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if update.callback_query:
         await update.callback_query.answer()
-        await update.callback_query.message.edit_text("👋 You’ve been logged out.")
+        await update.callback_query.message.edit_text("👋 Вы успешно вышли из аккаунта. /start")
     elif update.message:
-        await update.message.reply_text("👋 You’ve been logged out.")
+        await update.message.reply_text("👋 Вы успешно вышли из аккаунта. /start")
 
 
 async def client_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ Canceled.")
+    await update.message.reply_text("❌ Отменено.")
     return ConversationHandler.END
